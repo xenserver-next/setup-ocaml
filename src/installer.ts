@@ -86,19 +86,21 @@ async function acquireOpamUnix(version: string, customRepository: string) {
     await exec("sudo", [
       "apt-get",
       "install",
+      "--yes",
       "bubblewrap",
       "darcs",
       "g++-multilib",
       "gcc-multilib",
       "mercurial",
       "musl-tools",
+      "rsync",
     ]);
   } else if (platform === Platform.MacOS) {
     await exec("brew", ["install", "darcs", "gpatch", "mercurial"]);
   }
   const repository =
     customRepository || "https://github.com/ocaml/opam-repository.git";
-  await exec("opam", ["init", "--bare", "-yav", repository]);
+  await exec("opam", ["init", "--bare", "--disable-sandboxing", "-yav", repository]);
   await exec(path.join(__dirname, "install-ocaml-unix.sh"), [version]);
   await exec("opam", ["install", "-y", "depext"]);
 }
