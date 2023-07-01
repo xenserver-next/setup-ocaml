@@ -83,22 +83,31 @@ async function acquireOpamUnix(version: string, customRepository: string) {
     core.info("Added cached opam to the path");
   }
   if (platform === Platform.Linux) {
+    // const { actor } = github.context;
+    if (github.context.actor == "nektos/act") {
+      await exec("sudo", ["apt-get", "update"]);
+    }
     await exec("sudo", [
       "apt-get",
       "install",
+      "--yes",
       "bubblewrap",
       "darcs",
       "g++-multilib",
       "gcc-multilib",
       "mercurial",
       "musl-tools",
+      "rsync",
     ]);
+    if (github.context.actor == "nektos/act") {
+      await exec("sudo", ["apt-get", "--yes", "install", "rsync"]);
+    }
   } else if (platform === Platform.MacOS) {
     await exec("brew", ["install", "darcs", "gpatch", "mercurial"]);
   }
   const repository =
     customRepository || "https://github.com/ocaml/opam-repository.git";
-  await exec("opam", ["init", "--bare", "-yav", repository]);
+  await exec("opam", ["init", "--bare", "--disable-sandboxing", "-yav", repository]);
   await exec(path.join(__dirname, "install-ocaml-unix.sh"), [version]);
   await exec("opam", ["install", "-y", "depext"]);
 }
