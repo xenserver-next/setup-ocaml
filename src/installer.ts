@@ -11,6 +11,9 @@ import { getArchitecture, getPlatform } from "./system";
 
 async function getLatestOpamRelease() {
   const semverRange = "<2.1.0";
+  if (!GITHUB_TOKEN) {
+    core.setFailed("GITHUB_TOKEN not set! For nektos/act, use act -s GITHUB_TOKEN=$(gh auth token)")
+  }
   const octokit = github.getOctokit(GITHUB_TOKEN);
   const { data: releases } = await octokit.rest.repos.listReleases({
     owner: "ocaml",
@@ -83,8 +86,12 @@ async function acquireOpamUnix(version: string, customRepository: string) {
     core.info("Added cached opam to the path");
   }
   if (platform === Platform.Linux) {
+    if (github.context.actor === "nektos/act") {
+      await exec("sudo", ["apt-get", "update"]);
+    }
     await exec("sudo", [
       "apt-get",
+      "--yes",
       "install",
       "bubblewrap",
       "darcs",
@@ -93,12 +100,19 @@ async function acquireOpamUnix(version: string, customRepository: string) {
       "mercurial",
       "musl-tools",
     ]);
+    if (github.context.actor === "nektos/act") {
+      await exec("sudo", ["apt-get", "--yes", "install", "rsync"]);
+    }
   } else if (platform === Platform.MacOS) {
     await exec("brew", ["install", "darcs", "gpatch", "mercurial"]);
   }
   const repository =
     customRepository || "https://github.com/ocaml/opam-repository.git";
-  await exec("opam", ["init", "--bare", "-yav", repository]);
+  const disableSandboxing = []
+  if (github.context.actor === "nektos/act") {
+      disableSandboxing.push("--disable-sandboxing")
+  }
+  await exec("opam", ["init", "--bare", ...disableSandboxing, "-yav", repository]);
   await exec(path.join(__dirname, "install-ocaml-unix.sh"), [version]);
   await exec("opam", ["install", "-y", "depext"]);
 }
