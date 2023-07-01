@@ -16966,6 +16966,7 @@ async function acquireOpamUnix(version, customRepository) {
     if (platform === Platform.Linux) {
         await (0,exec.exec)("sudo", [
             "apt-get",
+	    "--yes",
             "install",
             "bubblewrap",
             "darcs",

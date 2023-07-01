@@ -86,6 +86,7 @@ async function acquireOpamUnix(version: string, customRepository: string) {
     await exec("sudo", [
       "apt-get",
       "install",
+      "--yes",
       "bubblewrap",
       "darcs",
       "g++-multilib",
